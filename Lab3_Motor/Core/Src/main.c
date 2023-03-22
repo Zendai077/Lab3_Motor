@@ -47,12 +47,13 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t InputCaptureBuffer[IC_BUFFER_SIZE];
-uint8_t MotorSetDuty = 50;
-uint32_t MotorSetRPM = 0;
-int32_t MotorReadRPM;
-uint8_t MotorControlEnable = 0;
-int8_t Error = 0;
 float averageRisingedgePeriod;
+float MotorSetDuty = 50;
+//uint32_t MotorSetDuty = 50;
+float MotorSetRPM = 0;
+float MotorReadRPM = 0;
+uint32_t MotorControlEnable = 0;
+float ErrorRPM = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -118,31 +119,33 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	static uint32_t timestamp = 0;
-	if(HAL_GetTick() >= timestamp)
-	{
-		timestamp = HAL_GetTick() + 500;
-		averageRisingedgePeriod = IC_Calc_Period();
-		MotorReadRPM = 60/(64*12*averageRisingedgePeriod*0.000001);
-		switch(MotorControlEnable)
-		{
-			case 0:
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,MotorSetDuty);
-				Error = 0;
-			break;
-			case 1:
-				if(MotorReadRPM > MotorSetRPM)
-				{
-					Error--;
-				}
-				else if(MotorReadRPM < MotorSetRPM)
-				{
-					Error++;
-				}
-				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,MotorSetDuty+Error);
-			break;
-		}
-	}
+	  static uint32_t timestamp = 0;
+	  if(HAL_GetTick() >= timestamp)
+	  {
+		  timestamp = HAL_GetTick() + 500;
+		  averageRisingedgePeriod = IC_Calc_Period();
+		  //__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,duty);
+		  averageRisingedgePeriod = IC_Calc_Period();
+		  MotorReadRPM = 60/(64*12*averageRisingedgePeriod*0.000001);
+		  switch(MotorControlEnable)
+		  {
+		  	  case 0:
+		  		  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,MotorSetDuty*10);
+		  		  ErrorRPM = 0;
+		  		  break;
+		  	  case 1:
+		  		  if(MotorSetRPM < MotorReadRPM && MotorSetDuty+ErrorRPM >= 0)
+		  		  {
+		  			  ErrorRPM -= 1;
+		  		  }
+		  		  else if(MotorSetRPM > MotorReadRPM && MotorSetDuty+ErrorRPM <= 100)
+		  		  {
+		  			  ErrorRPM += 1;
+		  		  }
+		  		  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,(MotorSetDuty+ErrorRPM)*10);
+		  		  break;
+		  }
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -216,7 +219,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 83;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 99;
+  htim1.Init.Period = 999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
