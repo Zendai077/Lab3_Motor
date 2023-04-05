@@ -123,7 +123,7 @@ int main(void)
 	  if(HAL_GetTick() >= timestamp)
 	  {
 		  timestamp = HAL_GetTick() + 500;
-		  averageRisingedgePeriod = IC_Calc_Period();
+//		  averageRisingedgePeriod = IC_Calc_Period();
 		  //__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,duty);
 		  averageRisingedgePeriod = IC_Calc_Period();
 		  MotorReadRPM = 60/(64*12*averageRisingedgePeriod*0.000001);
